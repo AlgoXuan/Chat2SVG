@@ -20,40 +20,138 @@ Chat2SVG is a framework for generating vector graphics using large language mode
 
 
 ## Setup
-Clone the repository:
-```shell
-git clone git@github.com:kingnobro/Chat2SVG.git
-cd Chat2SVG
-conda create --name chat2svg python=3.10
+
+## 1. System Prerequisites
+Ensure you are on Linux with NVIDIA Drivers installed.
+If running in Docker/Ubuntu, install OpenGL libs for OpenCV:
+```bash
+apt-get update && apt-get install -y libgl1-mesa-glx git build-essential
+````
+
+### 2. Create Environment
+
+We use Python 3.10.
+
+```
+conda create -n chat2svg python=3.10 -y
 conda activate chat2svg
 ```
 
-Install PyTorch and other dependencies:
-```shell
-conda install pytorch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1  pytorch-cuda=11.8 -c pytorch -c nvidia
-pip install git+https://github.com/facebookresearch/segment-anything.git
-pip install -r requirements.txt
+### 3. Install CUDA & PyTorch (The Foundation)
+
+**Critical Step:** We must match system CUDA headers with PyTorch CUDA version.
+
+Bash
+
+```
+# 1. Install CUDA Toolkit 11.8 (Provides nvcc and headers for diffvg)
+conda install -c "nvidia/label/cuda-11.8.0" cuda-toolkit -y
+
+# 2. Install PyTorch compatible with CUDA 11.8
+pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu118
 ```
 
-Install [diffvg](https://github.com/BachiLi/diffvg) for differentiable rendering:
-```shell
+### 4. Install General Dependencies
+
+Use our frozen requirements file to prevent version conflicts (especially Numpy 2.0).
+
+```
+# Copy the provided requirements_frozen.txt to your root dir
+pip install -r requirements_frozen.txt --no-deps
+```
+
+### 5. Install Git-based Dependencies
+
+These packages must be installed separately to avoid dependency resolution messing up our environment.
+
+```
+# OpenAI CLIP
+pip install git+https://github.com/openai/CLIP.git --no-deps
+
+# Segment Anything Model (SAM)
+pip install git+https://github.com/facebookresearch/segment-anything.git
+ --no-deps
+
+# Picosvg (Standard install)
+pip install picosvg
+```
+
+### 6. Compile & Install DiffVG (The Boss Fight) ⚔️
+
+The original diffvg fails to compile on modern environments. We will patch it automatically.
+
+#### 6.1 Clone & Init
+
+Bash
+
+```
+cd /mnt  # Or your preferred directory
 git clone https://github.com/BachiLi/diffvg.git
 cd diffvg
 git submodule update --init --recursive
-conda install -y -c anaconda cmake
-conda install -y -c conda-forge ffmpeg
-pip install svgwrite svgpathtools cssutils torch-tools
-python setup.py install
-cd ..
 ```
 
-Install [picosvg](https://github.com/googlefonts/picosvg) for SVG cleaning:
-```shell
-git clone git@github.com:googlefonts/picosvg.git
-cd picosvg
-pip install -e .
-cd ..
+#### 6.2 Auto-Patch Source Code (Fixes Version Errors)
+
+Run these commands to modify `diffvg.cpp` without opening an editor:
+
+Bash
+
 ```
+# Fix "CUDA versions below 12 not supported" error
+sed -i '1i #define CCCL_IGNORE_DEPRECATED_CUDA_BELOW_12' diffvg.cpp
+```
+
+#### 6.3 Compile
+
+Set environment variables so CMake can find the Conda CUDA headers.
+
+Bash
+
+```
+export CUDA_HOME=$CONDA_PREFIX
+
+# CRITICAL: We explicitly add the 'cccl' path to fix "thrust/execution_policy.h not found"
+export CPATH=$CONDA_PREFIX/targets/x86_64-linux/include/cccl:$CONDA_PREFIX/targets/x86_64-linux/include:$CONDA_PREFIX/include:$CPATH
+
+export LIBRARY_PATH=$CONDA_PREFIX/lib:$LIBRARY_PATH
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
+
+# Use setup.py directly
+python setup.py install
+```
+
+### 7. Verification
+
+Run this command to check if everything is perfect.
+
+Bash
+
+```
+python -c "import torch; import diffvg; import pydiffvg; import transformers; import numpy; print(f'DiffVG: Success | GPU: {torch.cuda.is_available()} | Numpy: {numpy.__version__} (<2.0) | Transformers: {transformers.__version__}')"
+```
+
+If you see **DiffVG: Success**, you are ready to go!
+
+---
+
+### Troubleshooting
+
+- **Download Timeout**: If HuggingFace models fail to download:
+    
+    Bash
+    
+    ```
+    export HF_ENDPOINT=[https://hf-mirror.com](https://hf-mirror.com)
+    ```
+    
+- OpenCV Error: ImportError: libGL.so.1:
+    
+```
+    Run apt-get install libgl1-mesa-glx or pip install opencv-python-headless "numpy<2.0".    
+```
+
+
 
 ## Pipeline 🖌
 

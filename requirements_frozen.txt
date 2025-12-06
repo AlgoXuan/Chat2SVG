@@ -1,0 +1,62 @@
+# ==========================================
+# Chat2SVG Stable Environment Dependencies
+# Verified Date: 2025-12-06
+# System: Linux / CUDA 11.8 / Python 3.10
+# ==========================================
+
+# --- Core Safety Lock (CRITICAL) ---
+# Numpy 2.0+ breaks DiffVG compilation and execution.
+numpy<2.0
+
+# --- PyTorch (Managed by Conda, listed here for info) ---
+# torch>=2.0.0
+# torchvision
+
+# --- HuggingFace Stack (Aligned to Late 2023) ---
+# Locked to prevent 'SiglipImageProcessor' or 'cached_download' errors.
+transformers==4.35.2
+diffusers==0.24.0
+accelerate==0.24.1
+huggingface_hub==0.23.5
+datasets==2.15.0
+tokenizers==0.15.0
+safetensors
+
+# --- SVG & Image Processing ---
+svgpathtools>=1.6.0
+svgwrite>=1.4.3
+cssutils>=2.6.0
+# Scikit-image > 0.22 may force numpy upgrade, keep it safe.
+scikit-image<=0.22.0
+cairosvg
+shapely
+pillow
+imageio
+imageio[pyav]
+opencv-python
+matplotlib
+visdom
+
+# --- AI Models & Utilities ---
+jaxtyping
+omegaconf
+beautifulsoup4
+timm
+scikit-fmm
+einops
+kornia
+ftfy
+regex
+rasterio
+scipy
+triton
+numba
+image-reward
+moviepy==1.0.3
+
+# --- Helper Utilities ---
+packaging
+tqdm
+pyyaml
+requests
+python-dotenv
